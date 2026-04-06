@@ -4,7 +4,7 @@ import time
 
 # --- CONFIGURAÇÕES ---
 JAVA_URL = "http://localhost:8080/api/traffic"
-API_KEY = "5b8371a3fe209df5772d6180b83310c1" # OpenWeatherMap
+API_KEY = "API_AQUI" # OpenWeatherMap
 CIDADE = "Guarulhos" 
 IDS_CRUZAMENTOS = [1, 2, 3]
 

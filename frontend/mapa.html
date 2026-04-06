@@ -28,7 +28,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // 1. Configurações Iniciais do Mapa (Focado em SP)
+        // Configuraçõe inicial mapa sp
         const map = L.map('map').setView([-23.5616, -46.6560], 14); // Coordenadas da Paulista
         
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -36,7 +36,6 @@
         }).addTo(map);
 
         // 2. Banco de Dados Local dos Marcadores (Mapeando Nome -> Coordenadas)
-        // No futuro, isso pode vir do seu Banco de Dados Java!
         const intersectionCoords = {
             "Av. Paulista x Al. Campinas": [-23.5645, -46.6521],
             "Av. Faria Lima x Av. JK": [-23.5899, -46.6788],
@@ -45,7 +44,7 @@
 
         const markers = {}; // Guardará os objetos do Leaflet
 
-        // 3. Conexão WebSocket (Igual ao seu teste anterior)
+        // Conexão WebSocket 
         const socket = new SockJS('http://localhost:8080/ws-traffic');
         const stompClient = Stomp.over(socket);
         stompClient.debug = null;
