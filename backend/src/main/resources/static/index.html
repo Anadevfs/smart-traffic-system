@@ -1,609 +1,587 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Traffic Control Center</title>
+    <title>Smart Traffic Control</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-        <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=layout-fix-2">
 </head>
 <body>
-    <div class="app-shell">
-        <header class="topbar panel">
-            <div class="brand-block">
-                <div class="brand-mark">T</div>
-                <div>
-                    <div class="eyebrow">Urban Mobility Intelligence</div>
-                    <h1 class="brand-title">Smart Traffic Control Center</h1>
-                    <p class="brand-subtitle">Painel operacional para monitoramento de cruzamentos, decisao adaptativa de semaforos e leitura visual de risco urbano em tempo real.</p>
-                </div>
+<div class="app-shell">
+    <header class="topbar glass">
+        <div class="brand-block">
+            <div class="brand-mark">
+                <span class="brand-pulse"></span>
+                <span>ST</span>
             </div>
-            <div class="system-status">
-                <div class="status-chip">
-                    <span id="connection-dot" class="status-dot"></span>
-                    <span id="status-text">Carregando dados iniciais...</span>
-                </div>
-                <div class="status-chip">
-                    <span class="small-text">Atualizacao</span>
-                    <strong id="last-update">--:--:--</strong>
-                </div>
+            <div class="brand-copy">
+                <h1>Smart Traffic Control</h1>
+                <p>Centro de Monitoramento Urbano</p>
             </div>
-        </header>
+        </div>
 
-        <section class="summary-grid">
-            <article class="metric-card panel">
-                <div class="metric-label">Cruzamentos monitorados</div>
+        <div class="system-status">
+            <div class="online-pill">
+                <span id="connection-dot" class="status-dot"></span>
+                <span id="status-text">Carregando dados iniciais...</span>
+            </div>
+            <div class="clock-block">
+                <strong id="last-update">--:--:--</strong>
+                <span>ultima atualizacao</span>
+            </div>
+        </div>
+    </header>
+
+    <section class="summary-grid">
+        <article class="metric-card glass-sm animate-slide-up">
+            <div class="metric-icon metric-icon-primary">C</div>
+            <div>
                 <div id="metric-intersections" class="metric-value">0</div>
-                <div class="metric-note">Malha observada pelo centro de controle</div>
-            </article>
-            <article class="metric-card panel">
-                <div class="metric-label">Alertas ativos</div>
+                <div class="metric-label">Cruzamentos <span>monitorados</span></div>
+            </div>
+        </article>
+        <article class="metric-card glass-sm animate-slide-up delay-1">
+            <div class="metric-icon metric-icon-warning">A</div>
+            <div>
                 <div id="metric-alerts" class="metric-value">0</div>
-                <div class="metric-note">Eventos de chuva, acidente ou bloqueio visual</div>
-            </article>
-            <article class="metric-card panel">
-                <div class="metric-label">Regioes com chuva</div>
+                <div class="metric-label">Alertas <span>ativos</span></div>
+            </div>
+        </article>
+        <article class="metric-card glass-sm animate-slide-up delay-2">
+            <div class="metric-icon metric-icon-rain">R</div>
+            <div>
                 <div id="metric-rain" class="metric-value">0</div>
-                <div class="metric-note">Sinais de operacao com reducao de velocidade</div>
-                <div id="weather-indicator" class="weather-indicator">
-                    <span id="weather-icon" class="weather-icon">â˜€ï¸</span>
-                    <div class="weather-copy">
-                        <span id="weather-text" class="weather-text">Sem chuva</span>
-                        <div id="weather-detail" class="weather-detail">Cenario estavel na malha monitorada</div>
-                    </div>
-                </div>
-            </article>
-            <article class="metric-card panel">
-                <div class="metric-label">Risco de alagamento</div>
+                <div class="metric-label">Regioes <span>com chuva</span></div>
+            </div>
+        </article>
+        <article class="metric-card glass-sm animate-slide-up delay-3">
+            <div class="metric-icon metric-icon-flood">H</div>
+            <div>
                 <div id="metric-flood" class="metric-value">0</div>
-                <div class="metric-note">Indicador visual local para acompanhamento rapido</div>
-            </article>
-        </section>
+                <div class="metric-label">Risco hidrico</div>
+            </div>
+        </article>
+    </section>
 
-        <aside class="left-panel panel">
-            <section class="panel-section">
-                <div class="section-header">
-                    <div>
-                        <h2 class="section-title">Cruzamento em foco</h2>
-                        <p class="section-caption">Selecione um marcador para inspecionar a intersecao monitorada.</p>
+    <main class="dashboard-grid">
+        <section class="map-column">
+            <div class="map-panel glass">
+                <div class="map-frame">
+                    <div id="map"></div>
+                </div>
+                <div class="map-overlay"></div>
+                <div class="map-header">
+                    <div class="map-chip">Sao Paulo - tempo real</div>
+                    <div class="map-chip coordinates">-23.5505 S, -46.6333 W</div>
+                </div>
+                <div class="map-footer">
+                    <div class="map-chip">Selecione um marcador para ver detalhes</div>
+                    <div class="map-chip">API local + WebSocket ativo</div>
+                </div>
+            </div>
+
+            <section class="bottom-panels">
+                <div class="legend glass-sm">
+                    <div class="legend-title">Legenda</div>
+                    <div class="legend-list">
+                        <div class="legend-item"><span class="legend-swatch swatch-normal"></span><span>Normal</span></div>
+                        <div class="legend-item"><span class="legend-swatch swatch-attention"></span><span>Atencao</span></div>
+                        <div class="legend-item"><span class="legend-swatch swatch-congested"></span><span>Critico</span></div>
+                        <div class="legend-item"><span class="legend-swatch swatch-rain"></span><span>Chuva</span></div>
                     </div>
                 </div>
-                <div class="status-banner">
-                    <h3 id="selected-name" class="selected-name">Aguardando selecao</h3>
-                    <div id="selected-tag" class="selected-tag">Sem dados selecionados</div>
-                </div>
-            </section>
 
-            <section class="panel-section">
-                <div class="detail-grid">
-                    <div class="detail-card">
-                        <div class="detail-label">Fluxo veicular</div>
-                        <div id="selected-cars" class="detail-value">--</div>
-                        <div id="selected-flow-note" class="detail-subvalue">Leitura atual do cruzamento</div>
-                    </div>
-                    <div class="detail-card">
-                        <div class="detail-label">Semaforo</div>
-                        <div id="selected-light" class="detail-value">--</div>
-                        <div id="selected-light-note" class="detail-subvalue">Estado operacional da via</div>
-                    </div>
-                    <div class="detail-card">
-                        <div class="detail-label">Condicao urbana</div>
-                        <div id="selected-condition" class="detail-value">--</div>
-                        <div id="selected-condition-note" class="detail-subvalue">Chuva, incidente ou via livre</div>
-                    </div>
-                    <div class="detail-card">
-                        <div class="detail-label">Risco local</div>
-                        <div id="selected-risk" class="detail-value">--</div>
-                        <div id="selected-risk-note" class="detail-subvalue">Estimativa visual para apoio operacional</div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="panel-section">
-                <div class="decision-card">
-                    <h3 class="decision-title">Decisao inteligente</h3>
-                    <p id="decision-text" class="decision-text">Aguardando dados para recomendar priorizacao adaptativa do verde.</p>
-                    <div class="signal-bar">
-                        <div id="signal-fill" class="signal-fill"></div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="panel-section">
-                <div class="timeline">
-                    <div class="section-header">
-                        <div>
-                            <h3 class="section-title">Eventos recentes</h3>
-                            <p class="section-caption">Timeline local baseada nos dados atuais e nas atualizacoes do WebSocket.</p>
-                        </div>
+                <div class="timeline glass-sm">
+                    <div class="timeline-head">
+                        <h2>Eventos recentes</h2>
+                        <span id="timeline-count">0 eventos</span>
                     </div>
                     <div id="timeline-list" class="timeline-list">
                         <div class="small-text">Nenhum evento registrado ainda.</div>
                     </div>
                 </div>
             </section>
-        </aside>
+        </section>
 
-        <main class="map-panel panel">
-            <div class="map-frame">
-                <div id="map"></div>
-            </div>
-            <div class="map-overlay"></div>
-            <div class="map-header">
-                <div class="map-chip">Mapa operacional em tempo real</div>
-                <div class="map-chip">Centro expandido de Sao Paulo</div>
-            </div>
-            <div class="map-footer">
-                <div class="map-chip">Selecione um ponto para detalhar decisao e risco urbano.</div>
-                <div class="map-chip">API local: /api/traffic/intersections | WebSocket: /ws-traffic</div>
-            </div>
-        </main>
-
-        <aside class="right-panel panel">
-            <section class="panel-section">
-                <div class="legend">
-                    <div class="section-header">
-                        <div>
-                            <h2 class="section-title">Legenda operacional</h2>
-                            <p class="section-caption">Estados visuais do mapa e da camada de decisao.</p>
-                        </div>
-                    </div>
-                    <div class="legend-list">
-                        <div class="legend-item">
-                            <span class="legend-swatch" style="background: var(--green); color: var(--green);"></span>
-                            <div class="legend-label">
-                                <div>Fluxo normal</div>
-                                <div class="small-text">Semaforo em operacao verde e baixa pressao viaria</div>
-                            </div>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-swatch" style="background: var(--yellow); color: var(--yellow);"></span>
-                            <div class="legend-label">
-                                <div>Atencao</div>
-                                <div class="small-text">Volume intermediario ou transicao de semaforo</div>
-                            </div>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-swatch" style="background: var(--red); color: var(--red);"></span>
-                            <div class="legend-label">
-                                <div>Congestionado / bloqueado</div>
-                                <div class="small-text">Incidente, fila elevada ou semaforo restritivo</div>
-                            </div>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-swatch" style="background: var(--blue); color: var(--blue);"></span>
-                            <div class="legend-label">
-                                <div>Chuva / risco hidrico</div>
-                                <div class="small-text">Indicador visual local derivado da condicao atual</div>
-                            </div>
-                        </div>
-                    </div>
+        <aside class="side-panel glass">
+            <section class="selected-header">
+                <div>
+                    <h2 id="selected-name">Aguardando selecao</h2>
+                    <div id="selected-tag" class="selected-tag">Sem dados selecionados</div>
+                </div>
+                <div id="semaphore-stack" class="semaphore-stack">
+                    <span data-light="RED"></span>
+                    <span data-light="YELLOW"></span>
+                    <span data-light="GREEN"></span>
                 </div>
             </section>
 
-            <section class="panel-section">
-                <div class="intersection-list">
-                    <div class="section-header">
-                        <div>
-                            <h2 class="section-title">Intersecoes monitoradas</h2>
-                            <p class="section-caption">Resumo operacional por cruzamento.</p>
-                        </div>
-                    </div>
-                    <div id="intersection-items" class="intersection-items">
-                        <div class="small-text">Carregando lista operacional...</div>
-                    </div>
+            <section class="detail-grid">
+                <div class="detail-card glass-subtle">
+                    <span class="detail-label">Veiculos</span>
+                    <strong id="selected-cars" class="detail-value">--</strong>
+                    <span id="selected-flow-note" class="detail-subvalue">Leitura atual</span>
+                </div>
+                <div class="detail-card glass-subtle">
+                    <span class="detail-label">Semaforo</span>
+                    <strong id="selected-light" class="detail-value">--</strong>
+                    <span id="selected-light-note" class="detail-subvalue">Estado operacional</span>
+                </div>
+            </section>
+
+            <section id="weather-indicator" class="weather-card">
+                <span id="weather-icon" class="weather-icon">S</span>
+                <div>
+                    <strong id="weather-text">Sem chuva</strong>
+                    <span id="weather-detail">Cenario estavel na malha monitorada</span>
+                </div>
+            </section>
+
+            <section class="risk-block">
+                <div class="risk-head">
+                    <span>Risco de alagamento</span>
+                    <strong id="selected-risk">--</strong>
+                </div>
+                <div class="risk-bar"><div id="risk-fill"></div></div>
+                <p id="selected-risk-note">Indicador visual local baseado na condicao atual.</p>
+            </section>
+
+            <section class="condition-block glass-subtle">
+                <div class="condition-row">
+                    <span>Condicao urbana</span>
+                    <strong id="selected-condition">--</strong>
+                </div>
+                <p id="selected-condition-note">Selecione um cruzamento para inspecionar a operacao.</p>
+            </section>
+
+            <section class="decision-card">
+                <div class="decision-title">Decisao inteligente</div>
+                <p id="decision-text">Aguardando dados para recomendar priorizacao adaptativa do verde.</p>
+                <div class="signal-bar"><div id="signal-fill"></div></div>
+            </section>
+
+            <section class="intersection-list">
+                <div class="list-head">
+                    <h2>Intersecoes monitoradas</h2>
+                    <span>dados reais da API</span>
+                </div>
+                <div id="intersection-items" class="intersection-items">
+                    <div class="small-text">Carregando lista operacional...</div>
                 </div>
             </section>
         </aside>
-    </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        const apiBase = window.location.origin;
-        const map = L.map("map", { zoomControl: false }).setView([-23.5616, -46.6560], 13.8);
-        L.control.zoom({ position: "bottomright" }).addTo(map);
+    </main>
+</div>
 
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-            attribution: "&copy; OpenStreetMap &copy; CARTO"
-        }).addTo(map);
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const apiBase = window.location.origin;
+    const map = L.map("map", { zoomControl: false }).setView([-23.5616, -46.6560], 13.8);
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+    function fixMapSize() {
+        map.invalidateSize(false);
+    }
+    window.addEventListener("load", function () {
+        setTimeout(fixMapSize, 0);
+        setTimeout(fixMapSize, 150);
+        setTimeout(fixMapSize, 500);
+    });
+    window.addEventListener("resize", function () {
+        setTimeout(fixMapSize, 0);
+    });
+    new ResizeObserver(function () {
+        fixMapSize();
+    }).observe(document.getElementById("map"));
 
-        const intersectionCoords = {
-            "Av. Paulista x Al. Campinas": [-23.5645, -46.6521],
-            "Av. Faria Lima x Av. JK": [-23.5899, -46.6788],
-            "Cruzamento 3": [-23.5600, -46.6600]
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        attribution: "&copy; OpenStreetMap &copy; CARTO"
+    }).addTo(map);
+
+    const intersectionCoords = {
+        "Av. Paulista x Al. Campinas": [-23.5645, -46.6521],
+        "Av. Faria Lima x Av. JK": [-23.5899, -46.6788],
+        "Cruzamento 3": [-23.5600, -46.6600]
+    };
+
+    const frontHints = {
+        "Av. Paulista x Al. Campinas": {
+            zone: "Corredor Paulista",
+            floodRisk: "Moderado",
+            priority: "Via principal com prioridade para alto fluxo comercial",
+            recommendation: "Tempo verde ajustado dinamicamente para absorver pico de entrada no corredor.",
+            recentNote: "Atualizacao operacional recebida no corredor Paulista."
+        },
+        "Av. Faria Lima x Av. JK": {
+            zone: "Eixo Financeiro",
+            floodRisk: "Baixo",
+            priority: "Balanceamento entre eixo arterial e conversoes",
+            recommendation: "Recomendacao adaptativa ativa para suavizar acumulacao em horario de pico.",
+            recentNote: "Monitoramento reforcado por variacao de densidade."
+        }
+    };
+
+    const state = {
+        intersections: [],
+        selectedName: null,
+        markers: {},
+        events: []
+    };
+
+    function updateConnectionStatus(text, online) {
+        document.getElementById("status-text").textContent = text;
+        const dot = document.getElementById("connection-dot");
+        dot.classList.remove("online", "offline");
+        dot.classList.add(online ? "online" : "offline");
+    }
+
+    function updateLastUpdate() {
+        document.getElementById("last-update").textContent = new Date().toLocaleTimeString("pt-BR");
+    }
+
+    function getTrafficLight(intersection) {
+        return (intersection.trafficLights && intersection.trafficLights[0]) || { state: "RED" };
+    }
+
+    function getOperationalStatus(intersection) {
+        const light = getTrafficLight(intersection).state;
+        if (intersection.condition === "ACCIDENT") {
+            return { label: "Critico", color: "#ef4444", css: "status-congested", note: "Incidente ou bloqueio detectado" };
+        }
+        if (intersection.condition === "HEAVY_RAIN") {
+            return { label: "Chuva", color: "#0ea5e9", css: "status-rain", note: "Operacao em cautela por clima" };
+        }
+        if (light === "GREEN") {
+            return { label: "Normal", color: "#22c55e", css: "status-normal", note: "Prioridade liberada para escoamento" };
+        }
+        if (light === "YELLOW") {
+            return { label: "Atencao", color: "#f59e0b", css: "status-attention", note: "Ajuste tatico em andamento" };
+        }
+        return { label: "Pressao viaria", color: "#ef4444", css: "status-congested", note: "Retencao temporaria ou acumulacao" };
+    }
+
+    function getFloodRisk(intersection) {
+        if (intersection.condition === "HEAVY_RAIN" && intersection.currentCarCount > 20) return "Alto";
+        if (intersection.condition === "HEAVY_RAIN") return "Moderado";
+        const hint = frontHints[intersection.name];
+        return hint ? hint.floodRisk : "Baixo";
+    }
+
+    function getFloodPercent(risk) {
+        if (risk === "Alto") return 86;
+        if (risk === "Moderado") return 52;
+        return 12;
+    }
+
+    function renderWeatherIndicator() {
+        const indicator = document.getElementById("weather-indicator");
+        const icon = document.getElementById("weather-icon");
+        const text = document.getElementById("weather-text");
+        const detail = document.getElementById("weather-detail");
+        const rainy = state.intersections.filter(function (item) {
+            return item.condition === "HEAVY_RAIN";
+        }).length;
+
+        indicator.classList.remove("weather-rain", "weather-clear");
+
+        if (rainy > 0) {
+            icon.textContent = "R";
+            text.textContent = rainy > 1 ? "Chuva em " + rainy + " regioes" : "Chuva detectada";
+            detail.textContent = "Operacao em cautela nos cruzamentos afetados.";
+            indicator.classList.add("weather-rain");
+            return;
+        }
+
+        icon.textContent = "S";
+        text.textContent = "Sem chuva";
+        detail.textContent = "Cenario estavel na malha monitorada.";
+        indicator.classList.add("weather-clear");
+    }
+
+    function buildDecisionText(intersection) {
+        const hint = frontHints[intersection.name];
+        const cars = intersection.currentCarCount;
+        const light = getTrafficLight(intersection).state;
+
+        if (intersection.condition === "ACCIDENT") {
+            return "Recomendacao adaptativa ativa: manter retencao no acesso critico e redirecionar fluxo para vias alternativas.";
+        }
+        if (intersection.condition === "HEAVY_RAIN") {
+            return "Operacao sob chuva: reduzir agressividade do ciclo e ampliar janela segura para dissipar acumulacao hidrica.";
+        }
+        if (cars > 25 || light === "GREEN") {
+            return (hint && hint.recommendation) || "Prioridade da via principal mantida com tempo verde ajustado dinamicamente.";
+        }
+        if (cars > 10 || light === "YELLOW") {
+            return "Ajuste preventivo em curso: balanceamento fino entre eixo principal e conversoes secundarias.";
+        }
+        return "Operacao estabilizada: manter configuracao atual e monitorar variacao de demanda.";
+    }
+
+    function buildTimelineEvent(intersection) {
+        const status = getOperationalStatus(intersection);
+        const hint = frontHints[intersection.name];
+        return {
+            tag: status.label,
+            css: status.css,
+            title: intersection.name,
+            note: hint ? hint.recentNote : "Atualizacao operacional recebida do backend local.",
+            time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
         };
+    }
 
-        const frontHints = {
-            "Av. Paulista x Al. Campinas": {
-                zone: "Corredor Paulista",
-                floodRisk: "Moderado",
-                priority: "Via principal com prioridade para alto fluxo comercial",
-                recommendation: "Tempo verde ajustado dinamicamente para absorver pico de entrada no corredor.",
-                recentNote: "Leitura de camera sugere manutencao de throughput sem abrir fila lateral."
-            },
-            "Av. Faria Lima x Av. JK": {
-                zone: "Eixo Financeiro",
-                floodRisk: "Baixo",
-                priority: "Balanceamento entre eixo arterial e conversoes",
-                recommendation: "Recomendacao adaptativa ativa para suavizar acumulacao em horario de pico.",
-                recentNote: "Monitoramento reforcado por variacao de densidade e chuva leve."
-            }
-        };
+    function pushEvent(intersection) {
+        state.events.unshift(buildTimelineEvent(intersection));
+        state.events = state.events.slice(0, 8);
+        renderTimeline();
+    }
 
-        const state = {
-            intersections: [],
-            selectedName: null,
-            markers: {},
-            events: []
-        };
+    function createMarkerIcon(color, selected) {
+        return L.divIcon({
+            className: "",
+            html: "<div class='marker-node" + (selected ? " selected" : "") + "' style='background:" + color + "; color:" + color + ";'><span></span></div>",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+            popupAnchor: [0, -12]
+        });
+    }
 
-        const weatherStates = [
-            { icon: "â˜€ï¸", text: "Sem chuva", detail: "Cenario estavel na malha monitorada", accent: "rgba(65, 213, 138, 0.14)" },
-            { icon: "â˜ï¸", text: "Nublado", detail: "Cobertura de nuvens com operacao em observacao", accent: "rgba(255, 255, 255, 0.12)" },
-            { icon: "ðŸŒ§ï¸", text: "Chuva leve", detail: "Regioes monitoradas com reducao de velocidade", accent: "rgba(78, 168, 255, 0.14)" },
-            { icon: "â›ˆï¸", text: "Chuva forte", detail: "Operacao em cautela com risco hidrico elevado", accent: "rgba(78, 168, 255, 0.20)" }
-        ];
+    function updateMarkerSelection() {
+        state.intersections.forEach(function (intersection) {
+            const marker = state.markers[intersection.name];
+            if (!marker) return;
+            marker.setIcon(createMarkerIcon(getOperationalStatus(intersection).color, state.selectedName === intersection.name));
+        });
+    }
 
-        let currentWeather = 0;
+    function selectIntersection(name, centerMap) {
+        const intersection = state.intersections.find(function (item) { return item.name === name; });
+        if (!intersection) return;
 
-        function updateConnectionStatus(text, online) {
-            document.getElementById("status-text").textContent = text;
-            const dot = document.getElementById("connection-dot");
-            dot.classList.remove("online", "offline");
-            dot.classList.add(online ? "online" : "offline");
+        state.selectedName = name;
+        renderSelected(intersection);
+        renderIntersectionList();
+        updateMarkerSelection();
+
+        if (centerMap) {
+            const coords = intersectionCoords[name] || [-23.56, -46.65];
+            map.flyTo(coords, 14.6, { duration: 0.6 });
+            const marker = state.markers[name];
+            if (marker) marker.openPopup();
+        }
+    }
+
+    function renderSelected(intersection) {
+        const light = getTrafficLight(intersection).state;
+        const status = getOperationalStatus(intersection);
+        const floodRisk = getFloodRisk(intersection);
+        const floodPercent = getFloodPercent(floodRisk);
+        const hint = frontHints[intersection.name] || {};
+        const flowFill = Math.max(12, Math.min(100, intersection.currentCarCount * 3));
+
+        document.getElementById("selected-name").textContent = intersection.name;
+        document.getElementById("selected-tag").textContent = status.label + " | " + (hint.zone || "Zona monitorada");
+        document.getElementById("selected-tag").style.color = status.color;
+        document.getElementById("selected-cars").textContent = intersection.currentCarCount;
+        document.getElementById("selected-flow-note").textContent = status.note;
+        document.getElementById("selected-light").textContent = light;
+        document.getElementById("selected-light-note").textContent = "Controle atual do semaforo inteligente";
+        document.getElementById("selected-condition").textContent = intersection.condition;
+        document.getElementById("selected-condition-note").textContent = hint.zone || "Operacao urbana acompanhada";
+        document.getElementById("selected-risk").textContent = floodRisk;
+        document.getElementById("selected-risk-note").textContent = hint.priority || "Indicador visual derivado da condicao atual.";
+        document.getElementById("decision-text").textContent = buildDecisionText(intersection);
+        document.getElementById("signal-fill").style.width = flowFill + "%";
+        document.getElementById("risk-fill").style.width = floodPercent + "%";
+        document.getElementById("risk-fill").style.background = floodRisk === "Alto" ? "var(--status-congested)" : floodRisk === "Moderado" ? "var(--status-attention)" : "var(--status-normal)";
+
+        Array.from(document.querySelectorAll("#semaphore-stack span")).forEach(function (item) {
+            item.classList.toggle("active", item.getAttribute("data-light") === light);
+        });
+    }
+
+    function renderMetrics() {
+        const total = state.intersections.length;
+        const alerts = state.intersections.filter(function (item) {
+            return item.condition === "ACCIDENT" || item.condition === "HEAVY_RAIN" || item.currentCarCount > 25;
+        }).length;
+        const rain = state.intersections.filter(function (item) {
+            return item.condition === "HEAVY_RAIN";
+        }).length;
+        const flood = state.intersections.filter(function (item) {
+            const risk = getFloodRisk(item);
+            return risk === "Alto" || risk === "Moderado";
+        }).length;
+
+        document.getElementById("metric-intersections").textContent = String(total);
+        document.getElementById("metric-alerts").textContent = String(alerts);
+        document.getElementById("metric-rain").textContent = String(rain);
+        document.getElementById("metric-flood").textContent = flood > 0 ? String(flood) : "Baixo";
+        renderWeatherIndicator();
+    }
+
+    function renderTimeline() {
+        const root = document.getElementById("timeline-list");
+        document.getElementById("timeline-count").textContent = state.events.length + " eventos";
+        if (!state.events.length) {
+            root.innerHTML = "<div class='small-text'>Nenhum evento registrado ainda.</div>";
+            return;
         }
 
-        function updateLastUpdate() {
-            document.getElementById("last-update").textContent = new Date().toLocaleTimeString("pt-BR");
+        root.innerHTML = state.events.map(function (event) {
+            return "<div class='timeline-item'>" +
+                "<span class='timeline-dot " + event.css + "'></span>" +
+                "<div class='timeline-main'>" +
+                "<strong>" + event.title + "</strong>" +
+                "<span>" + event.note + "</span>" +
+                "</div>" +
+                "<time>" + event.time + "</time>" +
+                "</div>";
+        }).join("");
+    }
+
+    function renderIntersectionList() {
+        const root = document.getElementById("intersection-items");
+        if (!state.intersections.length) {
+            root.innerHTML = "<div class='small-text'>Nenhuma intersecao disponivel.</div>";
+            return;
         }
 
-        function getTrafficLight(intersection) {
-            return (intersection.trafficLights && intersection.trafficLights[0]) || { state: "RED" };
-        }
-
-        function getOperationalStatus(intersection) {
-            const light = getTrafficLight(intersection).state;
-            if (intersection.condition === "ACCIDENT") {
-                return { label: "Via critica", color: "#ff6b6b", note: "Incidente ou bloqueio detectado" };
-            }
-            if (intersection.condition === "HEAVY_RAIN") {
-                return { label: "Chuva detectada", color: "#4ea8ff", note: "Operacao em cautela por clima" };
-            }
-            if (light === "GREEN") {
-                return { label: "Fluxo normal", color: "#41d58a", note: "Prioridade liberada para escoamento" };
-            }
-            if (light === "YELLOW") {
-                return { label: "Atencao", color: "#ffc857", note: "Ajuste tatico em andamento" };
-            }
-            return { label: "Pressao viaria", color: "#ff6b6b", note: "Retencao temporaria ou acumulacao" };
-        }
-
-        function getFloodRisk(intersection) {
-            if (intersection.condition === "HEAVY_RAIN" && intersection.currentCarCount > 20) return "Alto";
-            if (intersection.condition === "HEAVY_RAIN") return "Moderado";
-            const hint = frontHints[intersection.name];
-            return hint ? hint.floodRisk : "Baixo";
-        }
-
-        function getCurrentWeatherState() {
-            return weatherStates[currentWeather] || weatherStates[0];
-        }
-
-        function setCurrentWeather(nextWeather) {
-            if (typeof nextWeather === "number") {
-                currentWeather = ((nextWeather % weatherStates.length) + weatherStates.length) % weatherStates.length;
-                return;
-            }
-
-            const nextIndex = weatherStates.findIndex(function (item) {
-                return item.text === nextWeather;
-            });
-
-            currentWeather = nextIndex >= 0 ? nextIndex : 0;
-        }
-
-        function rotateWeatherState() {
-            setCurrentWeather(currentWeather + 1);
-            renderWeatherIndicator();
-        }
-
-        function renderWeatherIndicator() {
-            const weather = getCurrentWeatherState();
-            const indicator = document.getElementById("weather-indicator");
-            const icon = document.getElementById("weather-icon");
-            const text = document.getElementById("weather-text");
-            const detail = document.getElementById("weather-detail");
-
-            icon.textContent = weather.icon;
-            text.textContent = weather.text;
-            detail.textContent = weather.detail;
-            indicator.style.background = weather.accent;
-            indicator.style.borderColor = weather.accent;
-            icon.style.background = weather.accent;
-            icon.style.boxShadow = "0 0 20px " + weather.accent;
-        }
-
-        function buildDecisionText(intersection) {
-            const hint = frontHints[intersection.name];
-            const cars = intersection.currentCarCount;
-            const light = getTrafficLight(intersection).state;
-
-            if (intersection.condition === "ACCIDENT") {
-                return "Recomendacao adaptativa ativa: manter retencao no acesso critico e redirecionar fluxo para vias alternativas.";
-            }
-            if (intersection.condition === "HEAVY_RAIN") {
-                return "Operacao sob chuva: reduzir agressividade do ciclo e ampliar janela segura para dissipar acumulacao hidrica.";
-            }
-            if (cars > 25 || light === "GREEN") {
-                return (hint && hint.recommendation) || "Prioridade da via principal mantida com tempo verde ajustado dinamicamente.";
-            }
-            if (cars > 10 || light === "YELLOW") {
-                return "Ajuste preventivo em curso: balanceamento fino entre eixo principal e conversoes secundarias.";
-            }
-            return "Operacao estabilizada: manter configuracao atual e monitorar variacao de demanda por camera.";
-        }
-
-        function buildTimelineEvent(intersection) {
+        root.innerHTML = state.intersections.map(function (intersection) {
             const status = getOperationalStatus(intersection);
-            const hint = frontHints[intersection.name];
-            return {
-                tag: status.label,
-                title: intersection.name,
-                note: hint ? hint.recentNote : "Atualizacao operacional recebida do backend local.",
-                time: new Date().toLocaleTimeString("pt-BR")
-            };
-        }
+            const active = state.selectedName === intersection.name;
+            return "<button class='intersection-item" + (active ? " active" : "") + "' data-name='" + intersection.name + "'>" +
+                "<span class='list-dot " + status.css + "'></span>" +
+                "<span class='intersection-main'>" +
+                "<strong>" + intersection.name + "</strong>" +
+                "<small>" + status.note + "</small>" +
+                "</span>" +
+                "<span class='intersection-meta'>" +
+                "<strong>" + intersection.currentCarCount + "</strong>" +
+                "<small>veiculos</small>" +
+                "</span>" +
+                "</button>";
+        }).join("");
 
-        function pushEvent(intersection) {
-            state.events.unshift(buildTimelineEvent(intersection));
-            state.events = state.events.slice(0, 6);
-            renderTimeline();
-        }
-
-        function createMarkerIcon(color, selected) {
-            return L.divIcon({
-                className: "",
-                html: "<div class='marker-node" + (selected ? " selected" : "") + "' style='background:" + color + "; color:" + color + ";'></div>",
-                iconSize: [22, 22],
-                iconAnchor: [11, 11],
-                popupAnchor: [0, -12]
+        Array.from(root.querySelectorAll(".intersection-item")).forEach(function (element) {
+            element.addEventListener("click", function () {
+                selectIntersection(element.getAttribute("data-name"), true);
             });
+        });
+    }
+
+    function bindPopup(marker, intersection) {
+        const status = getOperationalStatus(intersection);
+        const light = getTrafficLight(intersection).state;
+        marker.bindPopup(
+            "<div class='map-popup'>" +
+            "<strong>" + intersection.name + "</strong>" +
+            "<span>Status: <b style='color:" + status.color + "'>" + status.label + "</b></span>" +
+            "<span>Fluxo: <b>" + intersection.currentCarCount + " veiculos</b></span>" +
+            "<span>Condicao: <b>" + intersection.condition + "</b></span>" +
+            "<span>Semaforo: <b>" + light + "</b></span>" +
+            "</div>"
+        );
+    }
+
+    function upsertIntersection(intersection, fromRealtime) {
+        const existingIndex = state.intersections.findIndex(function (item) {
+            return item.name === intersection.name;
+        });
+
+        if (existingIndex >= 0) {
+            state.intersections[existingIndex] = intersection;
+        } else {
+            state.intersections.push(intersection);
         }
 
-        function updateMarkerSelection() {
-            state.intersections.forEach(function (intersection) {
-                const marker = state.markers[intersection.name];
-                if (!marker) return;
-                marker.setIcon(createMarkerIcon(getOperationalStatus(intersection).color, state.selectedName === intersection.name));
-            });
-        }
+        const coords = intersectionCoords[intersection.name] || [-23.56, -46.65];
+        const status = getOperationalStatus(intersection);
+        let marker = state.markers[intersection.name];
 
-        function selectIntersection(name, centerMap) {
-            const intersection = state.intersections.find(function (item) { return item.name === name; });
-            if (!intersection) return;
-
-            state.selectedName = name;
-            renderSelected(intersection);
-            renderIntersectionList();
-            updateMarkerSelection();
-
-            if (centerMap) {
-                const coords = intersectionCoords[name] || [-23.56, -46.65];
-                map.flyTo(coords, 14.6, { duration: 0.6 });
-                const marker = state.markers[name];
-                if (marker) marker.openPopup();
-            }
-        }
-
-        function renderSelected(intersection) {
-            const light = getTrafficLight(intersection).state;
-            const status = getOperationalStatus(intersection);
-            const floodRisk = getFloodRisk(intersection);
-            const hint = frontHints[intersection.name] || {};
-            const flowFill = Math.max(18, Math.min(100, intersection.currentCarCount * 3));
-
-            document.getElementById("selected-name").textContent = intersection.name;
-            document.getElementById("selected-tag").textContent = status.label + " | " + (hint.zone || "Zona monitorada");
-            document.getElementById("selected-tag").style.background = status.color + "22";
-            document.getElementById("selected-tag").style.color = status.color;
-            document.getElementById("selected-cars").textContent = intersection.currentCarCount;
-            document.getElementById("selected-flow-note").textContent = status.note;
-            document.getElementById("selected-light").textContent = light;
-            document.getElementById("selected-light-note").textContent = "Controle atual do semaforo inteligente";
-            document.getElementById("selected-condition").textContent = intersection.condition;
-            document.getElementById("selected-condition-note").textContent = hint.zone || "Operacao urbana acompanhada";
-            document.getElementById("selected-risk").textContent = floodRisk;
-            document.getElementById("selected-risk-note").textContent = hint.priority || "Estimativa visual local isolada no front";
-            document.getElementById("decision-text").textContent = buildDecisionText(intersection);
-            document.getElementById("signal-fill").style.width = flowFill + "%";
-        }
-
-        function renderMetrics() {
-            const total = state.intersections.length;
-            const alerts = state.intersections.filter(function (item) {
-                return item.condition === "ACCIDENT" || item.condition === "HEAVY_RAIN" || item.currentCarCount > 25;
-            }).length;
-            const rain = state.intersections.filter(function (item) {
-                return item.condition === "HEAVY_RAIN";
-            }).length;
-            const flood = state.intersections.filter(function (item) {
-                return getFloodRisk(item) === "Alto" || getFloodRisk(item) === "Moderado";
-            }).length;
-
-            document.getElementById("metric-intersections").textContent = String(total);
-            document.getElementById("metric-alerts").textContent = String(alerts);
-            document.getElementById("metric-rain").textContent = String(rain);
-            document.getElementById("metric-flood").textContent = String(flood);
-        }
-
-        function startWeatherSimulation() {
-            renderWeatherIndicator();
-            window.setInterval(function () {
-                rotateWeatherState();
-            }, 4000);
-        }
-
-        function renderTimeline() {
-            const root = document.getElementById("timeline-list");
-            if (!state.events.length) {
-                root.innerHTML = "<div class='small-text'>Nenhum evento registrado ainda.</div>";
-                return;
-            }
-
-            root.innerHTML = state.events.map(function (event) {
-                return "<div class='timeline-item'>" +
-                    "<div class='timeline-main'>" +
-                    "<div><strong>" + event.title + "</strong></div>" +
-                    "<div class='small-text'>" + event.note + "</div>" +
-                    "</div>" +
-                    "<div style='text-align:right'>" +
-                    "<div class='event-pill'>" + event.tag + "</div>" +
-                    "<div class='small-text' style='margin-top:6px'>" + event.time + "</div>" +
-                    "</div>" +
-                    "</div>";
-            }).join("");
-        }
-
-        function renderIntersectionList() {
-            const root = document.getElementById("intersection-items");
-            if (!state.intersections.length) {
-                root.innerHTML = "<div class='small-text'>Nenhuma intersecao disponivel.</div>";
-                return;
-            }
-
-            root.innerHTML = state.intersections.map(function (intersection) {
-                const status = getOperationalStatus(intersection);
-                const active = state.selectedName === intersection.name;
-                return "<div class='intersection-item' data-name='" + intersection.name + "' style='cursor:pointer; padding:10px 12px; border-radius:14px; background:" + (active ? "rgba(57, 198, 255, 0.10)" : "transparent") + ";'>" +
-                    "<div class='intersection-main'>" +
-                    "<div><strong>" + intersection.name + "</strong></div>" +
-                    "<div class='small-text'>" + status.note + "</div>" +
-                    "</div>" +
-                    "<div style='text-align:right'>" +
-                    "<div class='event-pill' style='color:" + status.color + "; background:" + status.color + "18;'>" + status.label + "</div>" +
-                    "<div class='small-text' style='margin-top:6px'>" + intersection.currentCarCount + " veiculos</div>" +
-                    "</div>" +
-                    "</div>";
-            }).join("");
-
-            Array.from(root.querySelectorAll(".intersection-item")).forEach(function (element) {
-                element.addEventListener("click", function () {
-                    selectIntersection(element.getAttribute("data-name"), true);
-                });
-            });
-        }
-
-        function bindPopup(marker, intersection) {
-            const status = getOperationalStatus(intersection);
-            const light = getTrafficLight(intersection).state;
-            marker.bindPopup(
-                "<div style='min-width:220px'>" +
-                "<div style='font-family:Space Grotesk,sans-serif; font-size:16px; margin-bottom:8px;'>" + intersection.name + "</div>" +
-                "<div style='margin-bottom:4px;'>Status: <strong style='color:" + status.color + "'>" + status.label + "</strong></div>" +
-                "<div style='margin-bottom:4px;'>Fluxo: <strong>" + intersection.currentCarCount + " veiculos</strong></div>" +
-                "<div style='margin-bottom:4px;'>Condicao: <strong>" + intersection.condition + "</strong></div>" +
-                "<div>Semaforo: <strong>" + light + "</strong></div>" +
-                "</div>"
-            );
-        }
-
-        function upsertIntersection(intersection, fromRealtime) {
-            const existingIndex = state.intersections.findIndex(function (item) {
-                return item.name === intersection.name;
-            });
-
-            if (existingIndex >= 0) {
-                state.intersections[existingIndex] = intersection;
-            } else {
-                state.intersections.push(intersection);
-            }
-
-            const coords = intersectionCoords[intersection.name] || [-23.56, -46.65];
-            const status = getOperationalStatus(intersection);
-            let marker = state.markers[intersection.name];
-
-            if (!marker) {
-                marker = L.marker(coords, {
-                    icon: createMarkerIcon(status.color, false)
-                }).addTo(map);
-                marker.on("click", function () {
-                    selectIntersection(intersection.name, false);
-                });
-                state.markers[intersection.name] = marker;
-            } else {
-                marker.setIcon(createMarkerIcon(status.color, state.selectedName === intersection.name));
-            }
-
-            bindPopup(marker, intersection);
-
-            if (fromRealtime) {
-                pushEvent(intersection);
-            }
-
-            renderMetrics();
-            renderIntersectionList();
-
-            if (!state.selectedName || state.selectedName === intersection.name) {
+        if (!marker) {
+            marker = L.marker(coords, {
+                icon: createMarkerIcon(status.color, false)
+            }).addTo(map);
+            marker.on("click", function () {
                 selectIntersection(intersection.name, false);
-            } else {
-                updateMarkerSelection();
-            }
+            });
+            state.markers[intersection.name] = marker;
+        } else {
+            marker.setIcon(createMarkerIcon(status.color, state.selectedName === intersection.name));
+        }
 
+        bindPopup(marker, intersection);
+
+        if (fromRealtime) {
+            pushEvent(intersection);
+        }
+
+        renderMetrics();
+        renderIntersectionList();
+
+        if (!state.selectedName || state.selectedName === intersection.name) {
+            selectIntersection(intersection.name, false);
+        } else {
+            updateMarkerSelection();
+        }
+
+        updateLastUpdate();
+    }
+
+    function pushBootstrapEvents(intersections) {
+        state.events = intersections.slice(0, 4).map(buildTimelineEvent);
+        renderTimeline();
+    }
+
+    async function carregarIntersecoesIniciais() {
+        const response = await fetch(apiBase + "/api/traffic/intersections");
+        if (!response.ok) {
+            throw new Error("Falha ao carregar intersecoes");
+        }
+
+        const intersecoes = await response.json();
+        intersecoes.forEach(function (intersection) {
+            upsertIntersection(intersection, false);
+        });
+        setTimeout(function () {
+            fixMapSize();
+        }, 0);
+
+        if (intersecoes.length) {
+            selectIntersection(intersecoes[0].name, false);
+        }
+
+        pushBootstrapEvents(intersecoes);
+        updateConnectionStatus("Dados iniciais carregados. Conectando tempo real...", true);
+    }
+
+    function conectarWebSocket() {
+        const socket = new SockJS(apiBase + "/ws-traffic");
+        const stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+
+        stompClient.connect({}, function () {
+            updateConnectionStatus("ONLINE", true);
             updateLastUpdate();
-        }
-
-        function pushBootstrapEvents(intersections) {
-            state.events = intersections.slice(0, 3).map(buildTimelineEvent);
-            renderTimeline();
-        }
-
-        async function carregarIntersecoesIniciais() {
-            const response = await fetch(apiBase + "/api/traffic/intersections");
-            if (!response.ok) {
-                throw new Error("Falha ao carregar intersecoes");
-            }
-
-            const intersecoes = await response.json();
-            intersecoes.forEach(function (intersection) {
-                upsertIntersection(intersection, false);
+            stompClient.subscribe("/topic/traffic", function (mensagem) {
+                upsertIntersection(JSON.parse(mensagem.body), true);
             });
+        }, function () {
+            updateConnectionStatus("Tempo real indisponivel", false);
+        });
+    }
 
-            if (intersecoes.length) {
-                selectIntersection(intersecoes[0].name, false);
-            }
-
-            pushBootstrapEvents(intersecoes);
-            updateConnectionStatus("Dados iniciais carregados. Conectando tempo real...", true);
-        }
-
-        function conectarWebSocket() {
-            const socket = new SockJS(apiBase + "/ws-traffic");
-            const stompClient = Stomp.over(socket);
-            stompClient.debug = null;
-
-            stompClient.connect({}, function () {
-                updateConnectionStatus("Sistema online e recebendo telemetria", true);
-                updateLastUpdate();
-                stompClient.subscribe("/topic/traffic", function (mensagem) {
-                    upsertIntersection(JSON.parse(mensagem.body), true);
-                });
-            }, function () {
-                updateConnectionStatus("Tempo real indisponivel", false);
-            });
-        }
-
-        carregarIntersecoesIniciais()
-            .then(conectarWebSocket)
-            .catch(function () {
-                updateConnectionStatus("Falha ao carregar dados da API", false);
-            });
-
-        startWeatherSimulation();
-    </script>
+    carregarIntersecoesIniciais()
+        .then(conectarWebSocket)
+        .catch(function () {
+            updateConnectionStatus("Falha ao carregar dados da API", false);
+        });
+</script>
 </body>
 </html>
-
