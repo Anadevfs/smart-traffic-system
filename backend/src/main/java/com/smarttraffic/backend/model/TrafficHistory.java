@@ -10,7 +10,6 @@ public class TrafficHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // vincula log ao cruzamento específico
     @ManyToOne
     @JoinColumn(name = "intersection_id")
     private Intersection intersection;
@@ -18,22 +17,26 @@ public class TrafficHistory {
     private int carCount;
     private String condition;
 
-    // momento exato em que o dado chegou
+    // salva a decisão da inteligência
+    private int suggestedGreenTime;
+
     private LocalDateTime timestamp;
 
     public TrafficHistory() {}
 
-    public TrafficHistory(Intersection intersection, int carCount, String condition) {
+    // decisão do tempo
+    public TrafficHistory(Intersection intersection, int carCount, String condition, int suggestedGreenTime) {
         this.intersection = intersection;
         this.carCount = carCount;
         this.condition = condition;
-        this.timestamp = LocalDateTime.now(); // hora atual do sistema
+        this.suggestedGreenTime = suggestedGreenTime;
+        this.timestamp = LocalDateTime.now();
     }
 
-    // getters
     public Long getId() { return id; }
     public Intersection getIntersection() { return intersection; }
     public int getCarCount() { return carCount; }
     public String getCondition() { return condition; }
+    public int getSuggestedGreenTime() { return suggestedGreenTime; }
     public LocalDateTime getTimestamp() { return timestamp; }
 }

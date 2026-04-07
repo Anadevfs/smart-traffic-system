@@ -39,6 +39,16 @@ public class TrafficManagementService {
             Intersection.RoadCondition condition = Intersection.RoadCondition.valueOf(conditionStr);
             intersection.setCondition(condition);
 
+            // Calcula o tempo sugerido antes de salvar
+            int tempoSugerido;
+            if (newCarCount > 25 || condition == Intersection.RoadCondition.ACCIDENT) {
+                tempoSugerido = 60; // Trânsito pesado ou acidente
+            } else if (newCarCount > 10) {
+                tempoSugerido = 45; // Fluxo moderado
+            } else {
+                tempoSugerido = 30; // Fluxo leve
+            }
+
             if (intersection.getTrafficLights() != null) {
                 for (TrafficLight light : intersection.getTrafficLights()) {
 
@@ -67,13 +77,12 @@ public class TrafficManagementService {
             }
 
             // Salva no histórico
-            TrafficHistory historyEntry = new TrafficHistory(intersection, newCarCount, conditionStr);
+            TrafficHistory historyEntry = new TrafficHistory(intersection, newCarCount, conditionStr, tempoSugerido);
             historyRepository.save(historyEntry);
 
             // Salva o estado atual do cruzamento
             Intersection savedIntersection = intersectionRepository.save(intersection);
 
-            //
             // Envia o objeto atualizado para o canal "/topic/traffic"
             // Vai receber o JSON na hora
             messagingTemplate.convertAndSend("/topic/traffic", savedIntersection);
