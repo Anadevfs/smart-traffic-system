@@ -11,7 +11,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/traffic")
-@CrossOrigin(origins = "*") // javascript consegue acessar o sistema sem bloq
+@CrossOrigin(origins = "*") // javascript consegue acessar o sistema sem ser bloqueado
 public class TrafficController {
 
     @Autowired
@@ -41,5 +41,32 @@ public class TrafficController {
     @GetMapping("/{id}/history")
     public List<TrafficHistory> getHistory(@PathVariable Long id) {
         return service.getHistoryByIntersection(id);
+    }
+
+    // radar para buscar cruzamentos proximos por latitude, longitude e raio
+    @GetMapping("/nearby")
+    public List<Intersection> getNearby(
+            @RequestParam double lat,
+            @RequestParam double lon,
+            @RequestParam double radius) {
+
+        // chama o service para calcular a distancia e filtrar os cruzamentos
+        return service.getNearbyIntersections(lat, lon, radius);
+    }
+
+    // rota para ver apenas os dados da cidade (Recife ou SP)
+    @GetMapping("/city/{name}")
+    public List<Intersection> getByCity(@PathVariable String name) {
+        // chama o filtro de cidade no service
+        return service.getIntersectionsByCity(name);
+    }
+
+    // inicia a onda verde num raio de X quilometros a partir de um cruzamento travado
+    @PostMapping("/{id}/green-wave")
+    public List<Intersection> activateGreenWave(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "2.0") double radius) {
+
+        return service.triggerGreenWave(id, radius);
     }
 }

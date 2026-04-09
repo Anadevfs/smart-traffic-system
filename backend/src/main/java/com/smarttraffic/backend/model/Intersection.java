@@ -14,6 +14,15 @@ public class Intersection {
     private String name;
     private int currentCarCount;
 
+    // Radar geográfico
+    private double latitude;
+    private double longitude;
+    // ---------------------------------------------
+
+    // gestão multi-cidades
+    private String city;
+    private String state;
+
     // Enum para as condições da via
     public enum RoadCondition {
         NORMAL, ACCIDENT, HEAVY_RAIN
@@ -70,5 +79,37 @@ public class Intersection {
 
     public void setTrafficLights(List<TrafficLight> trafficLights) {
         this.trafficLights = trafficLights;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
     }
 }

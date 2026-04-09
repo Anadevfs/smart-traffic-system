@@ -96,4 +96,68 @@ public class TrafficManagementService {
     public List<TrafficHistory> getHistoryByIntersection(Long id) {
         return historyRepository.findByIntersectionIdOrderByTimestampDesc(id);
     }
+
+    // Radar geográfico
+    // Calculo de distância entre dois pontos (Haversine)
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Raio da Terra em km
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    // Busca cruzamentos próximos dentro de um raio (km)
+    public List<Intersection> getNearbyIntersections(double targetLat, double targetLon, double radiusInKm) {
+        List<Intersection> allIntersections = intersectionRepository.findAll();
+
+        return allIntersections.stream()
+                .filter(intersection -> calculateDistance(
+                        targetLat, targetLon,
+                        intersection.getLatitude(), intersection.getLongitude()
+                ) <= radiusInKm)
+                .toList();
+    }
+
+    // Busca cruzamentos filtrando por uma cidade específica para a prefeitura
+    public List<Intersection> getIntersectionsByCity(String cityName) {
+        List<Intersection> all = intersectionRepository.findAll();
+        return all.stream()
+                .filter(i -> i.getCity() != null && i.getCity().equalsIgnoreCase(cityName))
+                .toList();
+    }
+
+    // ONDA VERDE
+    // Força o sinal verde em um raio específico para desafogar o trânsito
+    public List<Intersection> triggerGreenWave(Long sourceIntersectionId, double radiusInKm) {
+        Optional<Intersection> sourceOpt = intersectionRepository.findById(sourceIntersectionId);
+
+        if (sourceOpt.isPresent()) {
+            Intersection source = sourceOpt.get();
+
+            // Usa o Radar para achar quem está perto
+            List<Intersection> nearbyIntersections = getNearbyIntersections(
+                    source.getLatitude(), source.getLongitude(), radiusInKm);
+
+            // Abre o semáforo de todo mundo da região
+            for (Intersection inter : nearbyIntersections) {
+                if (inter.getTrafficLights() != null) {
+                    for (TrafficLight light : inter.getTrafficLights()) {
+                        light.setState(TrafficLight.LightState.GREEN);
+                    }
+                }
+                // Salva no banco e avisa o front-end via WebSocket na mesma hora
+                Intersection saved = intersectionRepository.save(inter);
+                messagingTemplate.convertAndSend("/topic/traffic", saved);
+            }
+
+            return nearbyIntersections; // Retorna quem foi afetado pela onda verde
+        }
+        return null;
+    }
 }
