@@ -160,6 +160,39 @@
                 <p id="selected-condition-note">Selecione um cruzamento para inspecionar a operacao.</p>
             </section>
 
+            <section class="signal-control signal-control-card">
+                <div class="signal-control__title signal-control-title">Controle do semaforo</div>
+                <div class="signal-control__actions signal-control-actions">
+                    <button id="signal-open-btn" class="signal-btn signal-btn--open signal-btn-open" type="button">
+                        <span class="signal-btn__icon signal-btn-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M7 11V8a5 5 0 0 1 10 0" />
+                                <rect x="5" y="11" width="14" height="9" rx="2" />
+                            </svg>
+                        </span>
+                        <span class="signal-btn__text signal-btn-text">Abrir sinal</span>
+                    </button>
+                    <button id="signal-close-btn" class="signal-btn signal-btn--close signal-btn-close" type="button">
+                        <span class="signal-btn__icon signal-btn-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M7 11V8a5 5 0 0 1 10 0" />
+                                <rect x="5" y="11" width="14" height="9" rx="2" />
+                                <path d="M4 4l16 16" />
+                            </svg>
+                        </span>
+                        <span class="signal-btn__text signal-btn-text">Fechar sinal</span>
+                    </button>
+                </div>
+                <button id="signal-smart-btn" class="signal-btn signal-btn--smart signal-smart-btn" type="button">
+                    <span class="signal-btn__icon signal-smart-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M13 3L6 14h5l-1 7 8-12h-5l0-6z" />
+                        </svg>
+                    </span>
+                    <span class="signal-btn__text signal-smart-text">Ativar controle inteligente</span>
+                </button>
+            </section>
+
             <section class="decision-card">
                 <div class="decision-title">Decisao inteligente</div>
                 <p id="decision-text">Aguardando dados para recomendar priorizacao adaptativa do verde.</p>
@@ -233,6 +266,11 @@
         events: []
     };
 
+    const uiState = {
+        manualSignalByName: {},
+        smartControlByName: {}
+    };
+
     function updateConnectionStatus(text, online) {
         document.getElementById("status-text").textContent = text;
         const dot = document.getElementById("connection-dot");
@@ -248,8 +286,19 @@
         return (intersection.trafficLights && intersection.trafficLights[0]) || { state: "RED" };
     }
 
+    function isSmartControlActive(name) {
+        return Boolean(uiState.smartControlByName[name]);
+    }
+
+    function getDisplayedLight(intersection) {
+        const backendLight = getTrafficLight(intersection).state;
+        if (!intersection || !intersection.name) return backendLight;
+        if (isSmartControlActive(intersection.name)) return backendLight;
+        return uiState.manualSignalByName[intersection.name] || backendLight;
+    }
+
     function getOperationalStatus(intersection) {
-        const light = getTrafficLight(intersection).state;
+        const light = getDisplayedLight(intersection);
         if (intersection.condition === "ACCIDENT") {
             return { label: "Critico", color: "#ef4444", css: "status-congested", note: "Incidente ou bloqueio detectado" };
         }
@@ -306,7 +355,7 @@
     function buildDecisionText(intersection) {
         const hint = frontHints[intersection.name];
         const cars = intersection.currentCarCount;
-        const light = getTrafficLight(intersection).state;
+        const light = getDisplayedLight(intersection);
 
         if (intersection.condition === "ACCIDENT") {
             return "Recomendacao adaptativa ativa: manter retencao no acesso critico e redirecionar fluxo para vias alternativas.";
@@ -377,12 +426,13 @@
     }
 
     function renderSelected(intersection) {
-        const light = getTrafficLight(intersection).state;
+        const light = getDisplayedLight(intersection);
         const status = getOperationalStatus(intersection);
         const floodRisk = getFloodRisk(intersection);
         const floodPercent = getFloodPercent(floodRisk);
         const hint = frontHints[intersection.name] || {};
         const flowFill = Math.max(12, Math.min(100, intersection.currentCarCount * 3));
+        const smartActive = isSmartControlActive(intersection.name);
 
         document.getElementById("selected-name").textContent = intersection.name;
         document.getElementById("selected-tag").textContent = status.label + " | " + (hint.zone || "Zona monitorada");
@@ -390,7 +440,11 @@
         document.getElementById("selected-cars").textContent = intersection.currentCarCount;
         document.getElementById("selected-flow-note").textContent = status.note;
         document.getElementById("selected-light").textContent = light;
-        document.getElementById("selected-light-note").textContent = "Controle atual do semaforo inteligente";
+        document.getElementById("selected-light-note").textContent = smartActive
+            ? "Controle inteligente ativo no painel"
+            : (uiState.manualSignalByName[intersection.name]
+                ? "Ajuste manual visual ativo no front"
+                : "Controle atual do semaforo inteligente");
         document.getElementById("selected-condition").textContent = intersection.condition;
         document.getElementById("selected-condition-note").textContent = hint.zone || "Operacao urbana acompanhada";
         document.getElementById("selected-risk").textContent = floodRisk;
@@ -403,6 +457,51 @@
         Array.from(document.querySelectorAll("#semaphore-stack span")).forEach(function (item) {
             item.classList.toggle("active", item.getAttribute("data-light") === light);
         });
+
+        renderSignalControls(intersection);
+    }
+
+    function renderSignalControls(intersection) {
+        const selectedName = intersection && intersection.name;
+        const manualLight = selectedName ? uiState.manualSignalByName[selectedName] : null;
+        const smartActive = selectedName ? isSmartControlActive(selectedName) : false;
+        const openBtn = document.getElementById("signal-open-btn");
+        const closeBtn = document.getElementById("signal-close-btn");
+        const smartBtn = document.getElementById("signal-smart-btn");
+
+        openBtn.disabled = !selectedName;
+        closeBtn.disabled = !selectedName;
+        smartBtn.disabled = !selectedName;
+
+        openBtn.classList.toggle("active", manualLight === "GREEN" && !smartActive);
+        closeBtn.classList.toggle("active", manualLight === "RED" && !smartActive);
+        smartBtn.classList.toggle("active", smartActive);
+        smartBtn.textContent = smartActive ? "Controle inteligente ativo" : "Ativar controle inteligente";
+    }
+
+    function getSelectedIntersection() {
+        return state.intersections.find(function (item) {
+            return item.name === state.selectedName;
+        }) || null;
+    }
+
+    function setManualSignal(lightState) {
+        const intersection = getSelectedIntersection();
+        if (!intersection) return;
+        uiState.smartControlByName[intersection.name] = false;
+        uiState.manualSignalByName[intersection.name] = lightState;
+        renderSelected(intersection);
+    }
+
+    function toggleSmartControl() {
+        const intersection = getSelectedIntersection();
+        if (!intersection) return;
+        const nextValue = !isSmartControlActive(intersection.name);
+        uiState.smartControlByName[intersection.name] = nextValue;
+        if (nextValue) {
+            delete uiState.manualSignalByName[intersection.name];
+        }
+        renderSelected(intersection);
     }
 
     function renderMetrics() {
@@ -477,7 +576,7 @@
 
     function bindPopup(marker, intersection) {
         const status = getOperationalStatus(intersection);
-        const light = getTrafficLight(intersection).state;
+        const light = getDisplayedLight(intersection);
         marker.bindPopup(
             "<div class='map-popup'>" +
             "<strong>" + intersection.name + "</strong>" +
@@ -582,6 +681,18 @@
         .catch(function () {
             updateConnectionStatus("Falha ao carregar dados da API", false);
         });
+
+    document.getElementById("signal-open-btn").addEventListener("click", function () {
+        setManualSignal("GREEN");
+    });
+
+    document.getElementById("signal-close-btn").addEventListener("click", function () {
+        setManualSignal("RED");
+    });
+
+    document.getElementById("signal-smart-btn").addEventListener("click", function () {
+        toggleSmartControl();
+    });
 </script>
 </body>
 </html>
